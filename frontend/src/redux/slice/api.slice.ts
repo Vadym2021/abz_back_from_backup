@@ -8,6 +8,8 @@ import {IPositions} from "../../interfaces";
 interface IState {
     tokenStatus: boolean,
     page: number,
+    morePage: number,
+    currentPage: number,
     offset: number,
     count: number,
     users: IUser[],
@@ -22,6 +24,8 @@ interface IState {
 const initialState: IState = {
     tokenStatus: false,
     page: 1,
+    morePage: 1,
+    currentPage: 1,
     offset: 0,
     count: 5,
     users: [],
@@ -46,7 +50,6 @@ const register = createAsyncThunk<void, FormData, { rejectValue: IError }>(
 )
 
 
-
 const getToken = createAsyncThunk<IToken, void, { rejectValue: IError }>(
     'apiSlice/getToken',
     async (_, {rejectWithValue}) => {
@@ -58,7 +61,6 @@ const getToken = createAsyncThunk<IToken, void, { rejectValue: IError }>(
         }
     }
 );
-
 
 
 const getPositions = createAsyncThunk<IPositionsResponse<IPositions>, void, { rejectValue: IError }>(
@@ -80,7 +82,7 @@ const getAllUsers = createAsyncThunk<IPage<IUser>, {
     count: number
 }, { rejectValue: IError }>(
     'apiSlice/getAllUsers',
-    async ({page,offset, count}, {rejectWithValue}) => {
+    async ({page, offset, count}, {rejectWithValue}) => {
         try {
             const response = await apiService.getAllUsers(page, offset, count);
             return response.data;
@@ -89,6 +91,23 @@ const getAllUsers = createAsyncThunk<IPage<IUser>, {
         }
     }
 );
+
+const getMoreUsers = createAsyncThunk<IPage<IUser>, {
+    page: number;
+    offset: number;
+    count: number
+}, { rejectValue: IError }>(
+    'apiSlice/getMoreUsers',
+    async ({page, offset, count}, {rejectWithValue}) => {
+        try {
+            const response = await apiService.getAllUsers(page, offset, count);
+            return response.data;
+        } catch (error: any) {
+            return rejectWithValue(error.response.data);
+        }
+    }
+);
+
 
 const getUserById = createAsyncThunk<IUserSingleResponse<IUserSingle>, number, { rejectValue: IError }>(
     'apiSlice/getUserById',
@@ -150,9 +169,24 @@ const slice = createSlice({
                 state.users = users;
                 state.total_pages = action.payload.total_pages;
                 state.total_users = action.payload.total_users;
+                state.morePage = action.payload.page;
+                state.currentPage = action.payload.page;
                 state.error = null;
             })
             .addCase(getAllUsers.rejected, (state, action) => {
+                state.error = action.payload!;
+                state.users = [];
+            })
+            .addCase(getMoreUsers.fulfilled, (state, action) => {
+                const newUsers = action.payload.users;
+                state.users = [...state.users, ...newUsers];
+                state.total_pages = action.payload.total_pages;
+                state.total_users = action.payload.total_users;
+                state.morePage = action.payload.page;
+                state.currentPage = action.payload.page;
+                state.error = null;
+            })
+            .addCase(getMoreUsers.rejected, (state, action) => {
                 state.error = action.payload!;
                 state.users = [];
             })
@@ -188,6 +222,7 @@ const apiActions = {
     getAllUsers,
     getPositions,
     getUserById,
+    getMoreUsers,
 }
 
 export {

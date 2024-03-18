@@ -5,7 +5,7 @@ import { useSelector } from "react-redux";
 import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
 
 const UserList = () => {
-    const { users, total_users, total_pages, page, offset, count } = useSelector((state: RootState) => state.apiReducer);
+    const { users, total_users, total_pages, page,morePage, currentPage, offset, count } = useSelector((state: RootState) => state.apiReducer);
     const { error } = useAppSelector(state => state.apiReducer);
     const dispatch = useAppDispatch();
     const { register, handleSubmit } = useForm();
@@ -20,13 +20,15 @@ const UserList = () => {
 
     const onSubmit: SubmitHandler<FieldValues> = (data) => {
         const page = parseInt(data.page);
-        const offset = parseInt(data.offset);
+        const offset = data.offset ? parseInt(data.offset) : 0;
         const count = parseInt(data.count);
 
         dispatch(apiActions.setPage(page));
         dispatch(apiActions.setOffset(offset));
         dispatch(apiActions.setCount(count));
     };
+
+
 
     return (
         <div>
@@ -77,17 +79,23 @@ const UserList = () => {
             <div style={{ display: 'flex', gap: '10px', padding: '10px' }}>
                 <div>
                     <button
-                        onClick={() => dispatch(apiActions.setPage(page < 2 ? page : page - 1))}
+                        onClick={() => dispatch(apiActions.setPage(currentPage < 2 ? page : currentPage - 1))}
                         disabled={offset !== 0}
                     >
                         Prev Page
                     </button>
                 </div>
                 <div>We have {total_users} users in our base</div>
-                <div>Page: {page} of {total_pages}</div>
+
+                <div>
+                    <button onClick={()=> dispatch(apiActions.getMoreUsers({ page: morePage+1, offset: offset, count: count }))} disabled={offset !== 0}>Show more</button>
+                </div>
+
+                <div>Page: {currentPage} of {total_pages}</div>
+
                 <div>
                     <button
-                        onClick={() => dispatch(apiActions.setPage(page >= total_pages ? page : page + 1))}
+                        onClick={() => dispatch(apiActions.setPage(currentPage >= total_pages ? page : currentPage + 1))}
                         disabled={offset !== 0}
                     >
                         Next Page
