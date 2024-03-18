@@ -1,0 +1,35 @@
+version: "3.9"
+
+services:
+  back:
+    build:
+      context: .
+    env_file:
+      - .env
+#    ports:
+#      - "5556:$PORT"
+    volumes:
+      - ./dist:/app
+      - /app/node_modules
+    restart: on-failure
+    command: sh -c "node --watch app.js"
+
+  db:
+    image: postgres
+    env_file:
+      - .env
+#    ports:
+#      - "5433:5432"
+    volumes:
+      - ./postgres-init.js:/postgres-entrypoint-initdb.d/postgres-init.js
+      - ./postgres_db:/var/lib/postgresql/data
+    restart: on-failure
+
+  web:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    restart: on-failure
+    volumes:
+      - ./client:/usr/share/nginx/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
